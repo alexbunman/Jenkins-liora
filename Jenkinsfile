@@ -50,7 +50,7 @@ pipeline {
                     steps {
                         dir('movie-service') {
                             sh '''
-                                python3 -m venv venv
+                                python3.8 -m venv venv
                                 . venv/bin/activate
                                 pip install --upgrade pip
                                 pip install -r requirements.txt
@@ -63,7 +63,7 @@ pipeline {
                     steps {
                         dir('cast-service') {
                             sh '''
-                                python3 -m venv venv
+                                python3.8 -m venv venv
                                 . venv/bin/activate
                                 pip install --upgrade pip
                                 pip install -r requirements.txt
