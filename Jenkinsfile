@@ -107,13 +107,15 @@ pipeline {
                     sh """
                         kubectl create namespace ${TARGET_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
 
-                        helm upgrade --install movie-service ./charts/movie-service \\
+                        helm upgrade --install movie-service ./charts \\
                             --namespace ${TARGET_NAMESPACE} \\
+                            --set fullnameOverride=movie-service \\
                             --set image.repository=${MOVIE_IMAGE} \\
                             --set image.tag=${IMAGE_TAG}
 
-                        helm upgrade --install cast-service ./charts/cast-service \\
+                        helm upgrade --install cast-service ./charts \\
                             --namespace ${TARGET_NAMESPACE} \\
+                            --set fullnameOverride=cast-service \\
                             --set image.repository=${CAST_IMAGE} \\
                             --set image.tag=${IMAGE_TAG}
                     """
@@ -141,13 +143,15 @@ pipeline {
                     sh """
                         kubectl create namespace prod --dry-run=client -o yaml | kubectl apply -f -
 
-                        helm upgrade --install movie-service ./charts/movie-service \\
+                        helm upgrade --install movie-service ./charts \\
                             --namespace prod \\
+                            --set fullnameOverride=movie-service \\
                             --set image.repository=${MOVIE_IMAGE} \\
                             --set image.tag=${IMAGE_TAG}
 
-                        helm upgrade --install cast-service ./charts/cast-service \\
+                        helm upgrade --install cast-service ./charts \\
                             --namespace prod \\
+                            --set fullnameOverride=cast-service \\
                             --set image.repository=${CAST_IMAGE} \\
                             --set image.tag=${IMAGE_TAG}
                     """
