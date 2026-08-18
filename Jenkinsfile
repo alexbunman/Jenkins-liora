@@ -26,15 +26,23 @@ pipeline {
                     switch (env.BRANCH_NAME) {
                         case 'dev':
                             env.TARGET_NAMESPACE = 'dev'
+                            env.MOVIE_NODEPORT = '30007'
+                            env.CAST_NODEPORT = '30008'
                             break
                         case 'qa':
                             env.TARGET_NAMESPACE = 'qa'
+                            env.MOVIE_NODEPORT = '30009'
+                            env.CAST_NODEPORT = '30010'
                             break
                         case 'staging':
                             env.TARGET_NAMESPACE = 'staging'
+                            env.MOVIE_NODEPORT = '30011'
+                            env.CAST_NODEPORT = '30012'
                             break
                         case 'master':
                             env.TARGET_NAMESPACE = 'prod'
+                            env.MOVIE_NODEPORT = '30013'
+                            env.CAST_NODEPORT = '30014'
                             break
                         default:
                             env.TARGET_NAMESPACE = ''
@@ -112,14 +120,14 @@ pipeline {
                             --set fullnameOverride=movie-service \\
                             --set image.repository=${MOVIE_IMAGE} \\
                             --set image.tag=${IMAGE_TAG} \\
-                            --set service.nodePort=30007
+                            --set service.nodePort=${MOVIE_NODEPORT}
 
                         helm upgrade --install cast-service ./charts \\
                             --namespace ${TARGET_NAMESPACE} \\
                             --set fullnameOverride=cast-service \\
                             --set image.repository=${CAST_IMAGE} \\
                             --set image.tag=${IMAGE_TAG} \\
-                            --set service.nodePort=30008
+                            --set service.nodePort=${CAST_NODEPORT}
                     """
                 }
             }
@@ -150,14 +158,14 @@ pipeline {
                             --set fullnameOverride=movie-service \\
                             --set image.repository=${MOVIE_IMAGE} \\
                             --set image.tag=${IMAGE_TAG} \\
-                            --set service.nodePort=30007
+                            --set service.nodePort=${MOVIE_NODEPORT}
 
                         helm upgrade --install cast-service ./charts \\
                             --namespace prod \\
                             --set fullnameOverride=cast-service \\
                             --set image.repository=${CAST_IMAGE} \\
                             --set image.tag=${IMAGE_TAG} \\
-                            --set service.nodePort=30008
+                            --set service.nodePort=${CAST_NODEPORT}
                     """
                 }
             }
