@@ -91,3 +91,88 @@ pipeline {
                 sh """
                     echo \$DOCKERHUB_CREDENTIALS_PSW | docker login -u \$DOCKERHUB_CREDENTIALS_USR --password-stdin
                     docker push ${MOVIE_IMAGE}:${IMAGE_TAG}
+                    docker push ${MOVIE_IMAGE}:latest
+                    docker push ${CAST_IMAGE}:${IMAGE_TAG}
+                    docker push ${CAST_IMAGE}:latest
+                """
+            }
+        }
+
+        stage('Déploiement Dev/QA/Staging') {
+            when {
+                expression { env.BRANCH_NAME in ['dev', 'qa', 'staging'] }
+            }
+            steps {
+                withKubeConfig([credentialsId: 'kubeconfig']) {
+                    sh """
+                        kubectl create namespace ${TARGET_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+
+                        helm upgrade --install movie-service ./charts \\
+                            --namespace ${TARGET_NAMESPACE} \\
+                            --set fullnameOverride=movie-service \\
+                            --set image.repository=${MOVIE_IMAGE} \\
+                            --set image.tag=${IMAGE_TAG} \\
+                            --set service.nodePort=30007
+
+                        helm upgrade --install cast-service ./charts \\
+                            --namespace ${TARGET_NAMESPACE} \\
+                            --set fullnameOverride=cast-service \\
+                            --set image.repository=${CAST_IMAGE} \\
+                            --set image.tag=${IMAGE_TAG} \\
+                            --set service.nodePort=30008
+                    """
+                }
+            }
+        }
+
+        stage('Approbation manuelle Prod') {
+            when {
+                branch 'master'
+            }
+            steps {
+                timeout(time: 24, unit: 'HOURS') {
+                    input message: "Déployer la version ${IMAGE_TAG} en PRODUCTION ?", ok: 'Déployer'
+                }
+            }
+        }
+
+        stage('Déploiement Prod') {
+            when {
+                branch 'master'
+            }
+            steps {
+                withKubeConfig([credentialsId: 'kubeconfig']) {
+                    sh """
+                        kubectl create namespace prod --dry-run=client -o yaml | kubectl apply -f -
+
+                        helm upgrade --install movie-service ./charts \\
+                            --namespace prod \\
+                            --set fullnameOverride=movie-service \\
+                            --set image.repository=${MOVIE_IMAGE} \\
+                            --set image.tag=${IMAGE_TAG} \\
+                            --set service.nodePort=30007
+
+                        helm upgrade --install cast-service ./charts \\
+                            --namespace prod \\
+                            --set fullnameOverride=cast-service \\
+                            --set image.repository=${CAST_IMAGE} \\
+                            --set image.tag=${IMAGE_TAG} \\
+                            --set service.nodePort=30008
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh 'docker logout || true'
+        }
+        success {
+            echo "Pipeline terminé avec succès pour la branche ${env.BRANCH_NAME}"
+        }
+        failure {
+            echo "Échec du pipeline sur la branche ${env.BRANCH_NAME}"
+        }
+    }
+}
